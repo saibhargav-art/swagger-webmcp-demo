@@ -1,3 +1,4 @@
+import React from 'react';
 import { useState, useEffect } from 'react';
 import { useRouteTools } from 'swagger-webmcp/react';
 import openApiSpec from '../api/openapi.json';
@@ -67,27 +68,27 @@ export default function UsersPage() {
         <div style={styles.list}>
           {dataLoading
             ? Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} style={styles.skeleton} />
-              ))
+              <div key={i} style={styles.skeleton} />
+            ))
             : users.map((user) => (
-                <div
-                  key={user.id}
-                  style={{
-                    ...styles.card,
-                    ...(selectedUser?.id === user.id ? styles.cardSelected : {}),
-                  }}
-                  onClick={() => handleSelectUser(user)}
-                >
-                  <div style={styles.cardRow}>
-                    <span style={styles.avatar}>{user.name[0]}</span>
-                    <div>
-                      <div style={styles.cardName}>{user.name}</div>
-                      <div style={styles.cardSub}>@{user.username}</div>
-                    </div>
+              <div
+                key={user.id}
+                style={{
+                  ...styles.card,
+                  ...(selectedUser?.id === user.id ? styles.cardSelected : {}),
+                }}
+                onClick={() => handleSelectUser(user)}
+              >
+                <div style={styles.cardRow}>
+                  <span style={styles.avatar}>{user.name[0]}</span>
+                  <div>
+                    <div style={styles.cardName}>{user.name}</div>
+                    <div style={styles.cardSub}>@{user.username}</div>
                   </div>
-                  <div style={styles.cardEmail}>{user.email}</div>
                 </div>
-              ))}
+                <div style={styles.cardEmail}>{user.email}</div>
+              </div>
+            ))}
         </div>
 
         {/* User Detail */}

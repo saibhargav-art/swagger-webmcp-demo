@@ -11,13 +11,12 @@ import {
   unregisterSwaggerTools,
   swapToolScope,
   getRegisteredTools,
-} from '../lib/registry.js';
+} from 'swagger-webmcp';
 import type {
   SwaggerToolsOptions,
-  SwaggerToolsResult,
   SwaggerToolsScope,
   WebMCPToolDefinition,
-} from '../lib/types.js';
+} from 'swagger-webmcp';
 
 interface SwaggerToolsContextValue {
   tools: WebMCPToolDefinition[];
@@ -30,7 +29,7 @@ const SwaggerToolsContext = createContext<SwaggerToolsContextValue>({
   tools: [],
   loading: false,
   error: null,
-  refetch: async () => {},
+  refetch: async () => { },
 });
 
 interface SwaggerToolsProviderProps extends SwaggerToolsOptions {
@@ -67,7 +66,7 @@ export function SwaggerToolsProvider({
       if (result.errors.length > 0) {
         console.warn('Swagger tools registration warnings:', result.errors);
       }
-    } catch (err) {
+    } catch (err: unknown) {
       setError(err instanceof Error ? err : new Error(String(err)));
     } finally {
       setLoading(false);
@@ -142,14 +141,14 @@ export function useRouteTools(
 
         if (cancelled) return;
 
-        const names = result.tools.map((t) => t.name);
+        const names = result.tools.map((t: WebMCPToolDefinition) => t.name);
         registeredNamesRef.current = names;
         setRegisteredNames(names);
 
         if (result.errors.length > 0) {
           console.warn('[swagger-webmcp] useRouteTools warnings:', result.errors);
         }
-      } catch (err) {
+      } catch (err: unknown) {
         if (!cancelled) {
           setError(err instanceof Error ? err : new Error(String(err)));
         }
@@ -161,20 +160,16 @@ export function useRouteTools(
     run();
 
     return () => {
-      // Mark as cancelled so async result doesn't update unmounted component
       cancelled = true;
 
-      // Unregister only the tools this hook registered, not everything.
-      // This is intentional: if a parent registered global tools before this
-      // hook, we don't want to nuke them.
       if (registeredNamesRef.current.length > 0) {
-        unregisterSwaggerTools(registeredNamesRef.current).catch((err) => {
+        unregisterSwaggerTools(registeredNamesRef.current).catch((err: unknown) => {
           console.warn('[swagger-webmcp] Failed to unregister tools on unmount:', err);
         });
       }
     };
-  // Re-run only if the scope key or base options change.
-  // scope.key is the stable signal — not the tags array reference.
+    // Re-run only if the scope key or base options change.
+    // scope.key is the stable signal — not the tags array reference.
   }, [scope.key, options.baseUrl, options.spec, JSON.stringify(options.auth)]);
 
   return { loading, error, registeredNames };

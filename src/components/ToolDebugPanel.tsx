@@ -1,3 +1,4 @@
+import React from 'react';
 import { useRegisteredTools } from 'swagger-webmcp/react';
 
 export default function ToolDebugPanel() {

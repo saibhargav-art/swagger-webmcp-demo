@@ -1,3 +1,4 @@
+import React from 'react';
 import { useState, useEffect } from 'react';
 import { useRouteTools } from 'swagger-webmcp/react';
 import openApiSpec from '../api/openapi.json';
@@ -61,24 +62,24 @@ export default function PostsPage() {
         <div style={styles.list}>
           {dataLoading
             ? Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} style={styles.skeleton} />
-              ))
+              <div key={i} style={styles.skeleton} />
+            ))
             : posts.map((post) => (
-                <div
-                  key={post.id}
-                  style={{
-                    ...styles.card,
-                    ...(selectedPost?.id === post.id ? styles.cardSelected : {}),
-                  }}
-                  onClick={() => handleSelectPost(post)}
-                >
-                  <div style={styles.cardId}>#{post.id}</div>
-                  <div style={styles.cardTitle}>{post.title}</div>
-                  <div style={styles.cardPreview}>
-                    {post.body.slice(0, 60)}...
-                  </div>
+              <div
+                key={post.id}
+                style={{
+                  ...styles.card,
+                  ...(selectedPost?.id === post.id ? styles.cardSelected : {}),
+                }}
+                onClick={() => handleSelectPost(post)}
+              >
+                <div style={styles.cardId}>#{post.id}</div>
+                <div style={styles.cardTitle}>{post.title}</div>
+                <div style={styles.cardPreview}>
+                  {post.body.slice(0, 60)}...
                 </div>
-              ))}
+              </div>
+            ))}
         </div>
 
         {/* Post Detail */}

@@ -1,3 +1,4 @@
+import React from 'react';
 import { BrowserRouter, Routes, Route, NavLink, Navigate } from 'react-router-dom';
 import UsersPage from './pages/UsersPage';
 import PostsPage from './pages/PostsPage';
