@@ -1,5 +1,5 @@
+import { useRegisteredTools } from '@bhargav/swagger-webmcp/react';
 import React from 'react';
-import { useRegisteredTools } from 'swagger-webmcp/react';
 
 export default function ToolDebugPanel() {
   const tools = useRegisteredTools(500);

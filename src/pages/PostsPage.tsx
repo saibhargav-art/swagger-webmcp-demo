@@ -1,7 +1,7 @@
 import React from 'react';
 import { useState, useEffect } from 'react';
-import { useRouteTools } from 'swagger-webmcp/react';
 import openApiSpec from '../api/openapi.json';
+import { useRouteTools } from '@bhargav/swagger-webmcp/react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Post {
