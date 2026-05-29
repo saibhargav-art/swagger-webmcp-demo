@@ -1,0 +1,65 @@
+# AI Order Management Portal
+
+React + TypeScript demo for authenticated browser sessions, RBAC, Supabase Edge Functions, and route-scoped WebMCP tool exposure.
+
+## What is included
+
+- Supabase email/password login with persisted browser session
+- Protected dashboard, orders, admin, and activity log pages
+- Viewer, support, and admin role checks in the UI
+- Backend role revalidation in every Edge Function
+- Activity logging for successful, denied, and failed tool actions
+- WebMCP integration points through `useRouteTools` and named API handlers
+
+The existing `@bhargav/swagger-webmcp` dynamic registration system is reused. This app does not implement a new tool registration framework.
+
+## Environment
+
+Copy `.env.example` to `.env` and set:
+
+```bash
+VITE_SUPABASE_URL=https://your-project-ref.supabase.co
+VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
+```
+
+## Supabase setup
+
+1. Apply `supabase/migrations/001_ai_order_portal.sql`.
+2. Create three Supabase Auth email/password users:
+   - `admin@example.com`
+   - `support@example.com`
+   - `viewer@example.com`
+3. Update `supabase/seed.sql` with the real `auth.users.id` values for those accounts, then run it.
+4. Deploy the functions:
+
+```bash
+supabase functions deploy create-order
+supabase functions deploy update-order-status
+supabase functions deploy delete-order
+supabase functions deploy approve-refund
+supabase functions deploy search-orders
+supabase functions deploy update-quota
+```
+
+5. Set function secrets:
+
+```bash
+supabase secrets set SUPABASE_URL=https://your-project-ref.supabase.co
+supabase secrets set SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+```
+
+## WebMCP integration
+
+- `/orders` exposes route tools tagged `orders`: `createOrder`, `searchOrders`, `updateOrderStatus`.
+- `/admin` exposes route tools tagged `admin`: `deleteOrder`, `approveRefund`, `updateQuota`.
+- UI handlers live in `src/lib/supabaseApi.ts` as `orderToolHandlers` and `adminToolHandlers`.
+- Tool definitions live in `src/api/webmcp-openapi.json`.
+
+All tool execution endpoints require a valid Supabase JWT and re-check role permissions server-side.
+
+## Run locally
+
+```bash
+npm install
+npm run dev
+```

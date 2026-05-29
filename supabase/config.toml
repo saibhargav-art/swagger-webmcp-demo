@@ -1,0 +1,17 @@
+[functions.create-order]
+verify_jwt = false
+
+[functions.update-order-status]
+verify_jwt = false
+
+[functions.delete-order]
+verify_jwt = false
+
+[functions.approve-refund]
+verify_jwt = false
+
+[functions.search-orders]
+verify_jwt = false
+
+[functions.update-quota]
+verify_jwt = false
