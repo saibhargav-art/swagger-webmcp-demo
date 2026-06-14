@@ -1,56 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { executeSwaggerTool, useRouteTools } from '@bhargav/swagger-webmcp/react';
-import webMcpSpec from '../api/webmcp-openapi.json';
+import { adminToolHandlers } from '../lib/supabaseApi';
 import ConfirmModal from '../components/ConfirmModal';
 import { useToast } from '../components/Toast';
 import { useAuth } from '../context/AuthContext';
-import { supabaseUrl } from '../lib/config';
 import { getOrders } from '../lib/supabaseApi';
 import type { Order } from '../lib/types';
 
-function logToolInvocation(
-  toolName: string,
-  action: string,
-  params: Record<string, unknown>,
-  error: unknown
-) {
-  console.warn('[swagger-webmcp] Tool rejected', {
-    tool: toolName,
-    action,
-    params,
-    error: error instanceof Error ? error.message : String(error),
-  });
-}
-
 export default function AdminPage() {
   const { session, user } = useAuth();
-  const routeToolScopeKey = `admin:${session?.user.id || 'anonymous'}:${user?.role || 'unknown'}`;
-  const auth = React.useMemo(
-    () =>
-      session
-        ? {
-          type: 'bearer' as const,
-          token: session.access_token,
-        }
-        : undefined,
-    [session?.access_token]
-  );
-
-  const tools = useRouteTools(
-    {
-      key: routeToolScopeKey,
-      tags: ['admin'],
-      allowedScopes: ['admin:delete', 'admin:refund', 'admin:quota'],
-      requiredRoles: user?.role ? [user.role] : undefined,
-      scopeRegistrationMode: 'discovery',
-      secureMode: true,
-    },
-    {
-      spec: webMcpSpec,
-      baseUrl: `${supabaseUrl}/functions/v1`,
-      auth,
-    }
-  );
+  // Use demo backend handlers directly for normal admin actions.
   const toast = useToast();
   const [orders, setOrders] = useState<Order[]>([]);
   const [quotaUserId, setQuotaUserId] = useState('');
@@ -75,11 +33,10 @@ export default function AdminPage() {
 
     const params = { id };
     try {
-      await executeSwaggerTool('approveRefund', params);
+      await adminToolHandlers.approveRefund(session.access_token, params);
       toast('✅ Refund approved', 'success');
       await loadOrders();
     } catch (err) {
-      logToolInvocation('approveRefund', 'POST', params, err);
       const message = err instanceof Error ? err.message : 'Refund approval failed';
       toast(`❌ ${message}`, 'error');
     }
@@ -94,12 +51,11 @@ export default function AdminPage() {
 
     const params = { id: deleteId };
     try {
-      await executeSwaggerTool('deleteOrder', params);
+      await adminToolHandlers.deleteOrder(session.access_token, params);
       toast('✅ Order deleted', 'success');
       setDeleteId(null);
       await loadOrders();
     } catch (err) {
-      logToolInvocation('deleteOrder', 'POST', params, err);
       const message = err instanceof Error ? err.message : 'Delete failed';
       toast(`❌ ${message}`, 'error');
     }
@@ -113,10 +69,9 @@ export default function AdminPage() {
 
     const params = { user_id: quotaUserId, quota: Number(quota) };
     try {
-      await executeSwaggerTool('updateQuota', params);
+      await adminToolHandlers.updateQuota(session.access_token, params);
       toast('✅ Customer quota updated', 'success');
     } catch (err) {
-      logToolInvocation('updateQuota', 'POST', params, err);
       const message = err instanceof Error ? err.message : 'Quota update failed';
       toast(`❌ ${message}`, 'error');
     }
@@ -126,14 +81,11 @@ export default function AdminPage() {
     <div>
       <div className="mb-6">
         <h1 className="text-2xl font-semibold text-slate-950">Admin</h1>
-        <p className="mt-1 text-sm text-slate-500">Admin-only WebMCP tools: deleteOrder, approveRefund, updateQuota.</p>
-        <ToolRegistrationStatus loading={tools.loading} error={tools.error} count={tools.registeredNames.length} />
-        {tools.diagnostics?.permissionSummary ? (
-          <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-            <p className="font-semibold">Permission summary</p>
-            <p>{tools.diagnostics.permissionSummary}</p>
-          </div>
-        ) : null}
+        <p className="mt-1 text-sm text-slate-500">
+          {user?.role === 'admin'
+            ? 'Only admin users may perform admin tool actions.'
+            : 'You need admin access to manage orders and quotas.'}
+        </p>
       </div>
 
       <section className="mb-6 rounded-lg border border-slate-200 bg-white p-4">
@@ -203,8 +155,3 @@ export default function AdminPage() {
   );
 }
 
-function ToolRegistrationStatus({ loading, error, count }: { loading: boolean; error: Error | null; count: number }) {
-  if (loading) return <p className="mt-2 text-xs font-medium text-amber-700">Registering admin tools...</p>;
-  if (error) return <p className="mt-2 text-xs font-medium text-rose-700">Tool registration failed: {error.message}</p>;
-  return <p className="mt-2 text-xs font-medium text-emerald-700">{count} admin tools registered for this route.</p>;
-}

@@ -1,61 +1,17 @@
 import React, { FormEvent, useEffect, useMemo, useState } from 'react';
-import { executeSwaggerTool, useRouteTools } from '@bhargav/swagger-webmcp/react';
-import webMcpSpec from '../api/webmcp-openapi.json';
+import { orderToolHandlers } from '../lib/supabaseApi';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/Toast';
-import { supabaseUrl } from '../lib/config';
 import { getOrders } from '../lib/supabaseApi';
 import type { Order, OrderStatus, UserRole } from '../lib/types';
 
 const editableStatuses: OrderStatus[] = ['pending', 'processing', 'fulfilled', 'cancelled'];
 
-/**
- * Log only rejected tool executions.
- */
-function logToolInvocation(
-  toolName: string,
-  action: string,
-  params: Record<string, unknown>,
-  error: unknown
-) {
-  console.warn('[swagger-webmcp] Tool rejected', {
-    tool: toolName,
-    action,
-    params,
-    error: error instanceof Error ? error.message : String(error),
-  });
-}
 
 export default function OrdersPage() {
   const { session, user } = useAuth();
-  const routeToolScopeKey = `orders:${session?.user.id || 'anonymous'}:${user?.role || 'unknown'}`;
-  const orderToolTags = getOrderToolTags();
-  const auth = React.useMemo(
-    () =>
-      session
-        ? {
-          type: 'bearer' as const,
-          token: session.access_token,
-        }
-        : undefined,
-    [session?.access_token]
-  );
-
-  const tools = useRouteTools(
-    {
-      key: routeToolScopeKey,
-      tags: orderToolTags,
-      allowedScopes: getOrderAllowedScopes(user?.role),
-      requiredRoles: user?.role ? [user.role] : undefined,
-      scopeRegistrationMode: 'discovery',
-      secureMode: true,
-    },
-    {
-      spec: webMcpSpec,
-      baseUrl: `${supabaseUrl}/functions/v1`,
-      auth,
-    }
-  );
+  // Call demo backend functions directly for normal app usage.
+  // WebMCP is only used by AI agents; the React app uses the API handlers.
   const toast = useToast();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -63,11 +19,10 @@ export default function OrdersPage() {
   const [query, setQuery] = useState('');
   const [customerName, setCustomerName] = useState('');
   const [amount, setAmount] = useState('');
-  const [showPermissions, setShowPermissions] = useState(false);
 
   const canWrite = user?.role === 'support' || user?.role === 'admin';
-  const canCreateOrder = tools.authorizedNames.includes('createOrder');
-  const canUpdateOrderStatus = tools.authorizedNames.includes('updateOrderStatus');
+  const canCreateOrder = canWrite;
+  const canUpdateOrderStatus = canWrite;
 
   const loadOrders = async () => {
     if (!session) return;
@@ -96,7 +51,6 @@ export default function OrdersPage() {
     event.preventDefault();
     if (!session) {
       toast('❌ Not signed in', 'error');
-      console.warn('[Tool Invocation] createOrder blocked: not signed in');
       return;
     }
 
@@ -108,13 +62,12 @@ export default function OrdersPage() {
     };
 
     try {
-      await executeSwaggerTool('createOrder', params);
+      await orderToolHandlers.createOrder(session.access_token, params);
       setCustomerName('');
       setAmount('');
       toast('✅ Order created successfully', 'success');
       await loadOrders();
     } catch (err) {
-      logToolInvocation('createOrder', 'POST', params, err);
       const message = err instanceof Error ? err.message : 'Create order failed';
       toast(`❌ ${message}`, 'error');
     } finally {
@@ -125,17 +78,15 @@ export default function OrdersPage() {
   const updateStatus = async (id: string, status: OrderStatus) => {
     if (!session) {
       toast('❌ Not signed in', 'error');
-      console.warn('[Tool Invocation] updateOrderStatus blocked: not signed in');
       return;
     }
 
     const params = { id, status };
     try {
-      await executeSwaggerTool('updateOrderStatus', params);
+      await orderToolHandlers.updateOrderStatus(session.access_token, params);
       toast('✅ Order status updated', 'success');
       await loadOrders();
     } catch (err) {
-      logToolInvocation('updateOrderStatus', 'POST', params, err);
       const message = err instanceof Error ? err.message : 'Update failed';
       toast(`❌ ${message}`, 'error');
     }
@@ -144,16 +95,14 @@ export default function OrdersPage() {
   const searchOrders = async () => {
     if (!session) {
       toast('❌ Not signed in', 'error');
-      console.warn('[Tool Invocation] searchOrders blocked: not signed in');
       return;
     }
 
     const params = { query };
     try {
-      const result = await executeSwaggerTool('searchOrders', params);
+      const result = await orderToolHandlers.searchOrders(session.access_token, params);
       setOrders(result as Order[]);
     } catch (err) {
-      logToolInvocation('searchOrders', 'POST', params, err);
       const message = err instanceof Error ? err.message : 'Search failed';
       toast(`❌ ${message}`, 'error');
     }
@@ -164,14 +113,9 @@ export default function OrdersPage() {
       <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-end">
         <div>
           <h1 className="text-2xl font-semibold text-slate-950">Orders</h1>
-          <p className="mt-1 text-sm text-slate-500">{getToolSummary()}</p>
-          <ToolRegistrationStatus loading={tools.loading} error={tools.error} count={tools.registeredNames.length} />
-          {tools.diagnostics?.permissionSummary ? (
-            <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-              <p className="font-semibold">Permission summary</p>
-              <p>{tools.diagnostics.permissionSummary}</p>
-            </div>
-          ) : null}
+          <p className="mt-1 text-sm text-slate-500">
+            {user?.role ? `Signed in as ${user.role}. Available actions are based on your role.` : 'Sign in to view order history and actions.'}
+          </p>
         </div>
         <div className="flex gap-2">
           <input
@@ -190,31 +134,37 @@ export default function OrdersPage() {
         </div>
       </div>
 
-      <form className="mb-6 grid gap-3 rounded-lg border border-slate-200 bg-white p-4 md:grid-cols-[1fr_160px_auto]" onSubmit={createOrder}>
-        <input
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm"
-          placeholder="Customer name"
-          value={customerName}
-          onChange={(event) => setCustomerName(event.target.value)}
-          required
-        />
-        <input
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm"
-          min="0"
-          placeholder="Amount"
-          type="number"
-          value={amount}
-          onChange={(event) => setAmount(event.target.value)}
-          required
-        />
-        <button
-          className="rounded-md bg-slate-950 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:bg-slate-400 disabled:text-slate-300"
-          disabled={busy}
-          title={canCreateOrder ? 'Create new order (WebMCP will validate your permissions)' : 'You do not have permission to create orders'}
-        >
-          Create order
-        </button>
-      </form>
+      {canCreateOrder ? (
+        <form className="mb-6 grid gap-3 rounded-lg border border-slate-200 bg-white p-4 md:grid-cols-[1fr_160px_auto]" onSubmit={createOrder}>
+          <input
+            className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+            placeholder="Customer name"
+            value={customerName}
+            onChange={(event) => setCustomerName(event.target.value)}
+            required
+          />
+          <input
+            className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+            min="0"
+            placeholder="Amount"
+            type="number"
+            value={amount}
+            onChange={(event) => setAmount(event.target.value)}
+            required
+          />
+          <button
+            className="rounded-md bg-slate-950 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:bg-slate-400 disabled:text-slate-300"
+            disabled={busy}
+            title={canCreateOrder ? 'Create new order (WebMCP will validate your permissions)' : 'You do not have permission to create orders'}
+          >
+            Create order
+          </button>
+        </form>
+      ) : (
+        <div className="mb-6 rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-600">
+          You do not have permission to create orders.
+        </div>
+      )}
 
       <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
         <table className="w-full min-w-[760px] text-left text-sm">
@@ -237,15 +187,18 @@ export default function OrdersPage() {
                 <td className="px-4 py-3">${order.amount.toFixed(2)}</td>
                 <td className="px-4 py-3 capitalize">{order.status.replace('_', ' ')}</td>
                 <td className="px-4 py-3">
-                  <select
-                    className="rounded-md border border-slate-300 px-2 py-1 text-sm"
-                    value={order.status}
-                    disabled={!canUpdateOrderStatus}
-                    onChange={(event) => void updateStatus(order.id, event.target.value as OrderStatus)}
-                    title={canUpdateOrderStatus ? 'Update order status (WebMCP will validate permissions)' : 'You do not have permission to update order status'}
-                  >
-                    {editableStatuses.map((status) => <option key={status} value={status}>{status}</option>)}
-                  </select>
+                  {canUpdateOrderStatus ? (
+                    <select
+                      className="rounded-md border border-slate-300 px-2 py-1 text-sm"
+                      value={order.status}
+                      onChange={(event) => void updateStatus(order.id, event.target.value as OrderStatus)}
+                      title="Update order status (WebMCP will validate permissions)"
+                    >
+                      {editableStatuses.map((status) => <option key={status} value={status}>{status}</option>)}
+                    </select>
+                  ) : (
+                    <span className="text-slate-600">Status: {order.status.replace('_', ' ')}</span>
+                  )}
                 </td>
               </tr>
             ))}
@@ -256,21 +209,3 @@ export default function OrdersPage() {
   );
 }
 
-function getOrderAllowedScopes(role?: UserRole) {
-  if (role === 'support' || role === 'admin') return ['orders:read', 'orders:write'];
-  return ['orders:read'];
-}
-
-function getOrderToolTags() {
-  return ['orders:read', 'orders:write'];
-}
-
-function getToolSummary() {
-  return 'Route-scoped WebMCP tools: createOrder, searchOrders, updateOrderStatus.';
-}
-
-function ToolRegistrationStatus({ loading, error, count }: { loading: boolean; error: Error | null; count: number }) {
-  if (loading) return <p className="mt-2 text-xs font-medium text-amber-700">Registering order tools...</p>;
-  if (error) return <p className="mt-2 text-xs font-medium text-rose-700">Tool registration failed: {error.message}</p>;
-  return <p className="mt-2 text-xs font-medium text-emerald-700">{count} order tools registered for this route.</p>;
-}
