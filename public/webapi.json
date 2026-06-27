@@ -1,0 +1,427 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "AI Order Management WebMCP API",
+    "version": "1.0.0",
+    "description": "Tools exposed by the authenticated order portal. Host this JSON from the customer app and set servers[0].url to the backend API that executes the tools."
+  },
+  "servers": [
+    {
+      "url": "https://hnsuxguzwibnxhumedhs.supabase.co/functions/v1",
+      "description": "Supabase Edge Functions backend for WebMCP tool execution"
+    }
+  ],
+  "paths": {
+    "/create-order": {
+      "post": {
+        "operationId": "createOrder",
+        "summary": "Create an order",
+        "description": "Create a new customer order. Requires support or admin role.",
+        "tags": [
+          "orders:write"
+        ],
+        "x-webmcp-scopes": [
+          "orders:write"
+        ],
+        "x-webmcp-roles": [
+          "support",
+          "admin"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "customer_name",
+                  "amount"
+                ],
+                "properties": {
+                  "customer_name": {
+                    "type": "string",
+                    "description": "Customer or account name"
+                  },
+                  "amount": {
+                    "type": "number",
+                    "description": "Order amount in dollars"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Created order"
+          },
+          "403": {
+            "description": "Permission denied"
+          }
+        },
+        "x-webmcp-intent": "create",
+        "x-webmcp-requires-confirmation": true,
+        "x-webmcp-display-field": "customer_name",
+        "x-webmcp-record-id": "id"
+      }
+    },
+    "/update-order-status": {
+      "post": {
+        "operationId": "updateOrderStatus",
+        "summary": "Update order status",
+        "description": "Update an existing order status. Requires support or admin role.",
+        "tags": [
+          "orders:write"
+        ],
+        "x-webmcp-scopes": [
+          "orders:write"
+        ],
+        "x-webmcp-roles": [
+          "support",
+          "admin"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "status"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "description": "Order UUID"
+                  },
+                  "status": {
+                    "type": "string",
+                    "description": "New order status",
+                    "enum": [
+                      "pending",
+                      "processing",
+                      "fulfilled",
+                      "cancelled"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated order"
+          },
+          "403": {
+            "description": "Permission denied"
+          }
+        },
+        "x-webmcp-intent": "update",
+        "x-webmcp-requires-confirmation": true,
+        "x-webmcp-resolve-id-with": "searchOrders",
+        "x-webmcp-display-field": "customer_name",
+        "x-webmcp-record-id": "id"
+      }
+    },
+    "/search-orders": {
+      "post": {
+        "operationId": "searchOrders",
+        "summary": "Search orders",
+        "description": "Search orders by customer name. Available to authenticated viewer, support, and admin users.",
+        "tags": [
+          "orders:read"
+        ],
+        "x-webmcp-scopes": [
+          "orders:read"
+        ],
+        "x-webmcp-roles": [
+          "viewer",
+          "support",
+          "admin"
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "query": {
+                    "type": "string",
+                    "description": "Customer search text"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Matching orders"
+          },
+          "403": {
+            "description": "Permission denied"
+          }
+        },
+        "x-webmcp-intent": "search",
+        "x-webmcp-requires-confirmation": false,
+        "x-webmcp-searchable": [
+          "customer_name"
+        ],
+        "x-webmcp-filterable": [
+          "status"
+        ],
+        "x-webmcp-display-field": "customer_name",
+        "x-webmcp-record-id": "id"
+      }
+    },
+    "/list-orders": {
+      "post": {
+        "operationId": "listOrders",
+        "summary": "List orders",
+        "description": "List the latest orders. Available to authenticated viewer, support, and admin users.",
+        "tags": [
+          "orders:read"
+        ],
+        "x-webmcp-scopes": [
+          "orders:read"
+        ],
+        "x-webmcp-roles": [
+          "viewer",
+          "support",
+          "admin"
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {}
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Latest orders"
+          },
+          "403": {
+            "description": "Permission denied"
+          }
+        },
+        "x-webmcp-intent": "list",
+        "x-webmcp-requires-confirmation": false,
+        "x-webmcp-filterable": [
+          "status",
+          "customer_name"
+        ],
+        "x-webmcp-display-field": "customer_name",
+        "x-webmcp-record-id": "id"
+      }
+    },
+    "/get-order-status": {
+      "post": {
+        "operationId": "getOrderStatus",
+        "summary": "Get order status",
+        "description": "Get the current status and details for one order. Available to authenticated viewer, support, and admin users.",
+        "tags": [
+          "orders:read"
+        ],
+        "x-webmcp-scopes": [
+          "orders:read"
+        ],
+        "x-webmcp-roles": [
+          "viewer",
+          "support",
+          "admin"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "id"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "description": "Order UUID"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Order status"
+          },
+          "403": {
+            "description": "Permission denied"
+          }
+        },
+        "x-webmcp-intent": "get",
+        "x-webmcp-requires-confirmation": false,
+        "x-webmcp-resolve-id-with": "searchOrders",
+        "x-webmcp-display-field": "customer_name",
+        "x-webmcp-record-id": "id"
+      }
+    },
+    "/delete-order": {
+      "post": {
+        "operationId": "deleteOrder",
+        "summary": "Delete an order",
+        "description": "Delete an order. Requires admin role.",
+        "tags": [
+          "admin"
+        ],
+        "x-webmcp-scopes": [
+          "admin:delete"
+        ],
+        "x-webmcp-roles": [
+          "admin"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "id"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "description": "Order UUID"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Delete result"
+          },
+          "403": {
+            "description": "Permission denied"
+          }
+        },
+        "x-webmcp-intent": "delete",
+        "x-webmcp-requires-confirmation": true,
+        "x-webmcp-resolve-id-with": "searchOrders",
+        "x-webmcp-display-field": "customer_name",
+        "x-webmcp-record-id": "id"
+      }
+    },
+    "/approve-refund": {
+      "post": {
+        "operationId": "approveRefund",
+        "summary": "Approve refund",
+        "description": "Mark an order refund as approved. Requires admin role.",
+        "tags": [
+          "admin"
+        ],
+        "x-webmcp-scopes": [
+          "admin:refund"
+        ],
+        "x-webmcp-roles": [
+          "admin"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "id"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "description": "Order UUID"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated order"
+          },
+          "403": {
+            "description": "Permission denied"
+          }
+        },
+        "x-webmcp-intent": "approve",
+        "x-webmcp-requires-confirmation": true,
+        "x-webmcp-resolve-id-with": "searchOrders",
+        "x-webmcp-display-field": "customer_name",
+        "x-webmcp-record-id": "id"
+      }
+    },
+    "/update-quota": {
+      "post": {
+        "operationId": "updateQuota",
+        "summary": "Update customer quota",
+        "description": "Update an application user's quota. Requires admin role.",
+        "tags": [
+          "admin"
+        ],
+        "x-webmcp-scopes": [
+          "admin:quota"
+        ],
+        "x-webmcp-roles": [
+          "admin"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "user_id",
+                  "quota"
+                ],
+                "properties": {
+                  "user_id": {
+                    "type": "string",
+                    "description": "Application user UUID"
+                  },
+                  "quota": {
+                    "type": "number",
+                    "description": "New quota value"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated user"
+          },
+          "403": {
+            "description": "Permission denied"
+          }
+        },
+        "x-webmcp-intent": "update",
+        "x-webmcp-requires-confirmation": true,
+        "x-webmcp-display-field": "user_id",
+        "x-webmcp-record-id": "user_id"
+      }
+    }
+  },
+  "x-webmcp-headers": {
+    "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhuc3V4Z3V6d2libnhodW1lZGhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk3Mjc3MTQsImV4cCI6MjA5NTMwMzcxNH0.Pq7iHMDryjYkYDqueUldAyKO93OyuzGIOmunrt-dwbw"
+  }
+}

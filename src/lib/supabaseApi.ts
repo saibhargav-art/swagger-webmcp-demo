@@ -107,6 +107,10 @@ export const orderToolHandlers = {
     invokeFunction<Order>('update-order-status', token, payload),
   searchOrders: (token: string, payload: { query: string }) =>
     invokeFunction<Order[]>('search-orders', token, payload),
+  listOrders: (token: string) =>
+    invokeFunction<Order[]>('list-orders', token, {}),
+  getOrderStatus: (token: string, payload: { id: string }) =>
+    invokeFunction<Pick<Order, 'id' | 'customer_name' | 'amount' | 'status' | 'created_at'>>('get-order-status', token, payload),
 };
 
 export const adminToolHandlers = {

@@ -9,9 +9,7 @@ React + TypeScript demo for authenticated browser sessions, RBAC, Supabase Edge 
 - Viewer, support, and admin role checks in the UI
 - Backend role revalidation in every Edge Function
 - Activity logging for successful, denied, and failed tool actions
-- WebMCP integration points through `useRouteTools` and named API handlers
-
-The existing `@bhargav/swagger-webmcp` dynamic registration system is reused. This app does not implement a new tool registration framework.
+- WebMCP integration through a hosted `webapi.json` contract and named API handlers
 
 ## Environment
 
@@ -50,10 +48,12 @@ supabase secrets set SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 
 ## WebMCP integration
 
-- `/orders` exposes route tools tagged `orders`: `createOrder`, `searchOrders`, `updateOrderStatus`.
-- `/admin` exposes route tools tagged `admin`: `deleteOrder`, `approveRefund`, `updateQuota`.
+- The customer app hosts `/webapi.json`.
+- Set `servers[0].url` in `webapi.json` to the backend that executes tools, for example `https://your-project-ref.supabase.co/functions/v1`.
+- Order tools: `createOrder`, `searchOrders`, `updateOrderStatus`.
+- Admin tools: `deleteOrder`, `approveRefund`, `updateQuota`.
 - UI handlers live in `src/lib/supabaseApi.ts` as `orderToolHandlers` and `adminToolHandlers`.
-- Tool definitions live in `src/api/webmcp-openapi.json`.
+- Tool definitions live in `public/webapi.json`.
 
 All tool execution endpoints require a valid Supabase JWT and re-check role permissions server-side.
 

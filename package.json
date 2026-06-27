@@ -3,7 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "generate:webapi": "node scripts/generate-webapi.mjs",
+    "deploy:functions": "supabase functions deploy create-order update-order-status delete-order approve-refund search-orders list-orders get-order-status update-quota",
+    "predev": "npm run generate:webapi",
     "dev": "vite",
+    "prebuild": "npm run generate:webapi",
     "build": "tsc && vite build",
     "preview": "vite preview"
   },

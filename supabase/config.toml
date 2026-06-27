@@ -13,5 +13,11 @@ verify_jwt = false
 [functions.search-orders]
 verify_jwt = false
 
+[functions.list-orders]
+verify_jwt = false
+
+[functions.get-order-status]
+verify_jwt = false
+
 [functions.update-quota]
 verify_jwt = false
