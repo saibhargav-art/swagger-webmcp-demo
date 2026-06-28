@@ -5,7 +5,7 @@ Deno.serve(async (req) => {
   const auth = await requireActor(req, ['viewer', 'support', 'admin'], 'searchOrders');
   if ('error' in auth) return auth.error;
 
-  const body = await req.json();
+  const body = await readJsonBody(req);
   const query = String(body.query || '').trim();
   let builder = auth.client.from('orders').select('*').order('created_at', { ascending: false }).limit(50);
   if (query) builder = builder.ilike('customer_name', `%${query}%`);
@@ -20,3 +20,9 @@ Deno.serve(async (req) => {
   return json(data);
   });
 });
+
+async function readJsonBody(req: Request) {
+  const text = await req.text();
+  if (!text.trim()) return {};
+  return JSON.parse(text) as Record<string, unknown>;
+}
