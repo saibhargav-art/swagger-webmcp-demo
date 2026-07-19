@@ -36,6 +36,8 @@ supabase functions deploy update-order-status
 supabase functions deploy delete-order
 supabase functions deploy approve-refund
 supabase functions deploy search-orders
+supabase functions deploy list-orders
+supabase functions deploy get-order-status
 supabase functions deploy update-quota
 ```
 
@@ -53,7 +55,8 @@ supabase secrets set SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 - Order tools: `createOrder`, `searchOrders`, `updateOrderStatus`.
 - Admin tools: `deleteOrder`, `approveRefund`, `updateQuota`.
 - UI handlers live in `src/lib/supabaseApi.ts` as `orderToolHandlers` and `adminToolHandlers`.
-- Tool definitions live in `public/webapi.json`.
+- Tool definitions are maintained once in `src/api/webapi.template.json` and generated to `public/webapi.json`.
+- The contract uses standard bearer security and reusable schemas. Roles and permissions are intentionally not duplicated in the static contract.
 
 All tool execution endpoints require a valid Supabase JWT and re-check role permissions server-side.
 

@@ -5,10 +5,7 @@ import path from 'node:path';
 const root = process.cwd();
 const envPath = path.join(root, '.env');
 const templatePath = path.join(root, 'src', 'api', 'webapi.template.json');
-const outputs = [
-  path.join(root, 'public', 'webapi.json'),
-  path.join(root, 'src', 'api', 'webapi.json'),
-];
+const output = path.join(root, 'public', 'webapi.json');
 
 function parseEnv(raw) {
   return Object.fromEntries(
@@ -48,9 +45,7 @@ spec['x-webmcp-headers'] = {
 };
 
 const json = `${JSON.stringify(spec, null, 2)}\n`;
-for (const output of outputs) {
-  await mkdir(path.dirname(output), { recursive: true });
-  await writeFile(output, json);
-}
+await mkdir(path.dirname(output), { recursive: true });
+await writeFile(output, json);
 
 console.log(`Generated webapi.json for ${supabaseUrl}`);

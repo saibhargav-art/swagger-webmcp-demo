@@ -1,16 +1,18 @@
 import React, { FormEvent, useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { isSupabaseConfigured } from '../lib/config';
 
 export default function LoginPage() {
   const { login, session, user } = useAuth();
+  const [searchParams] = useSearchParams();
+  const returnTo = safeReturnPath(searchParams.get('returnTo'));
   const [email, setEmail] = useState('admin@example.com');
   const [password, setPassword] = useState('Password123!');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  if (session && user) return <Navigate to="/dashboard" replace />;
+  if (session && user) return <Navigate to={returnTo} replace />;
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -85,4 +87,16 @@ export default function LoginPage() {
       </div>
     </div>
   );
+}
+
+function safeReturnPath(value: string | null): string {
+  if (!value?.startsWith('/') || value.startsWith('//')) return '/dashboard';
+
+  try {
+    const target = new URL(value, window.location.origin);
+    if (target.origin !== window.location.origin || target.pathname === '/login') return '/dashboard';
+    return `${target.pathname}${target.search}${target.hash}`;
+  } catch {
+    return '/dashboard';
+  }
 }
