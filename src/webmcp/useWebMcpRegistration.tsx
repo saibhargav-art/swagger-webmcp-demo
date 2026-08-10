@@ -39,6 +39,27 @@ const DEFAULT_EXPOSED_ORIGINS = import.meta.env.DEV
 
 const TOOL_DEFINITIONS: ToolDefinition[] = [
   {
+    name: 'searchOrders',
+    description: 'Search orders by customer, status, order id, or free text.',
+    routePrefixes: ['/orders', '/dashboard', '/admin'],
+    roles: ['viewer', 'support', 'admin'],
+    readOnlyHint: true,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        query: {
+          type: 'string',
+          description: 'Customer name, status, order id, or search text',
+        },
+      },
+      required: ['query'],
+      additionalProperties: false,
+    },
+    execute: async ({ session }, input) => orderToolHandlers.searchOrders(session.access_token, {
+      query: asString(input.query, 'query'),
+    }),
+  },
+  {
     name: 'listOrders',
     description: 'List the latest orders for filtering, counting, comparison, and duplicate analysis.',
     routePrefixes: ['/dashboard', '/orders', '/admin'],
@@ -50,6 +71,32 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
       additionalProperties: false,
     },
     execute: async ({ session }) => getOrders(session.access_token),
+  },
+  {
+    name: 'createOrder',
+    description: 'Create a customer order from the orders page.',
+    routePrefixes: ['/orders'],
+    roles: ['support', 'admin'],
+    readOnlyHint: false,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        customer_name: {
+          type: 'string',
+          description: 'Customer or account name',
+        },
+        amount: {
+          type: 'number',
+          description: 'Order amount in dollars',
+        },
+      },
+      required: ['customer_name', 'amount'],
+      additionalProperties: false,
+    },
+    execute: async ({ session }, input) => orderToolHandlers.createOrder(session.access_token, {
+      customer_name: asString(input.customer_name, 'customer_name'),
+      amount: asNumber(input.amount, 'amount'),
+    }),
   },
   {
     name: 'getOrderStatus',
@@ -97,6 +144,32 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
     execute: async ({ session }, input) => orderToolHandlers.updateOrderStatus(session.access_token, {
       id: asString(input.id, 'id'),
       status: asOrderStatus(input.status),
+    }),
+  },
+  {
+    name: 'updateQuota',
+    description: 'Update a customer quota from the admin page.',
+    routePrefixes: ['/admin'],
+    roles: ['admin'],
+    readOnlyHint: false,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        user_id: {
+          type: 'string',
+          description: 'Application user UUID',
+        },
+        quota: {
+          type: 'number',
+          description: 'New quota value',
+        },
+      },
+      required: ['user_id', 'quota'],
+      additionalProperties: false,
+    },
+    execute: async ({ session }, input) => adminToolHandlers.updateQuota(session.access_token, {
+      user_id: asString(input.user_id, 'user_id'),
+      quota: asNumber(input.quota, 'quota'),
     }),
   },
   {
@@ -209,4 +282,12 @@ function asString(value: unknown, name: string): string {
 function asOrderStatus(value: unknown): OrderStatus {
   if (value === 'pending' || value === 'processing' || value === 'fulfilled' || value === 'cancelled') return value;
   throw new Error('Missing or invalid order status.');
+}
+
+function asNumber(value: unknown, name: string): number {
+  const parsed = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(parsed)) {
+    throw new Error(`Missing or invalid field: ${name}`);
+  }
+  return parsed;
 }
