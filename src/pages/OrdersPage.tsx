@@ -1,17 +1,14 @@
 import React, { FormEvent, useEffect, useMemo, useState } from 'react';
-import { orderToolHandlers } from '../lib/supabaseApi';
-import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/Toast';
-import { getOrders } from '../lib/supabaseApi';
-import type { Order, OrderStatus, UserRole } from '../lib/types';
+import { useAuth } from '../context/AuthContext';
+import { getOrders, orderToolHandlers } from '../lib/supabaseApi';
+import type { Order, OrderStatus } from '../lib/types';
+import { webMcpFieldProps, webMcpFormProps } from '../webmcp/formAttributes';
 
 const editableStatuses: OrderStatus[] = ['pending', 'processing', 'fulfilled', 'cancelled'];
 
-
 export default function OrdersPage() {
   const { session, user } = useAuth();
-  // Call demo backend functions directly for normal app usage.
-  // WebMCP is only used by AI agents; the React app uses the API handlers.
   const toast = useToast();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -21,8 +18,6 @@ export default function OrdersPage() {
   const [amount, setAmount] = useState('');
 
   const canWrite = user?.role === 'support' || user?.role === 'admin';
-  const canCreateOrder = canWrite;
-  const canUpdateOrderStatus = canWrite;
 
   const loadOrders = async () => {
     if (!session) return;
@@ -40,36 +35,31 @@ export default function OrdersPage() {
     void loadOrders();
   }, [session?.access_token]);
 
-
   const filteredOrders = useMemo(() => {
     const normalized = query.trim().toLowerCase();
     if (!normalized) return orders;
     return orders.filter((order) => `${order.id} ${order.customer_name} ${order.status}`.toLowerCase().includes(normalized));
   }, [orders, query]);
 
-  const createOrder = async (event: FormEvent) => {
+  const createOrder = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!session) {
-      toast('❌ Not signed in', 'error');
+      toast('Not signed in', 'error');
       return;
     }
 
     setBusy(true);
-
-    const params = {
-      customer_name: customerName,
-      amount: Number(amount),
-    };
-
     try {
-      await orderToolHandlers.createOrder(session.access_token, params);
+      await orderToolHandlers.createOrder(session.access_token, {
+        customer_name: customerName,
+        amount: Number(amount),
+      });
       setCustomerName('');
       setAmount('');
-      toast('✅ Order created successfully', 'success');
+      toast('Order created successfully', 'success');
       await loadOrders();
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Create order failed';
-      toast(`❌ ${message}`, 'error');
+      toast(err instanceof Error ? err.message : 'Create order failed', 'error');
     } finally {
       setBusy(false);
     }
@@ -77,34 +67,31 @@ export default function OrdersPage() {
 
   const updateStatus = async (id: string, status: OrderStatus) => {
     if (!session) {
-      toast('❌ Not signed in', 'error');
+      toast('Not signed in', 'error');
       return;
     }
 
-    const params = { id, status };
     try {
-      await orderToolHandlers.updateOrderStatus(session.access_token, params);
-      toast('✅ Order status updated', 'success');
+      await orderToolHandlers.updateOrderStatus(session.access_token, { id, status });
+      toast('Order status updated', 'success');
       await loadOrders();
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Update failed';
-      toast(`❌ ${message}`, 'error');
+      toast(err instanceof Error ? err.message : 'Update failed', 'error');
     }
   };
 
-  const searchOrders = async () => {
+  const searchOrders = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
     if (!session) {
-      toast('❌ Not signed in', 'error');
+      toast('Not signed in', 'error');
       return;
     }
 
-    const params = { query };
     try {
-      const result = await orderToolHandlers.searchOrders(session.access_token, params);
+      const result = await orderToolHandlers.searchOrders(session.access_token, { query });
       setOrders(result as Order[]);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Search failed';
-      toast(`❌ ${message}`, 'error');
+      toast(err instanceof Error ? err.message : 'Search failed', 'error');
     }
   };
 
@@ -117,31 +104,38 @@ export default function OrdersPage() {
             {user?.role ? `Signed in as ${user.role}. Available actions are based on your role.` : 'Sign in to view order history and actions.'}
           </p>
         </div>
-        <div className="flex gap-2">
+
+        <form className="flex gap-2" onSubmit={searchOrders} {...webMcpFormProps('searchOrders', 'Search orders')}>
           <input
             className="w-64 rounded-md border border-slate-300 px-3 py-2 text-sm"
             placeholder="Search orders"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
+            {...webMcpFieldProps('query', 'Customer name, status, order id, or other search text')}
           />
           <button
             className="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium hover:bg-slate-50"
-            onClick={searchOrders}
-            title="Search orders (WebMCP will validate your permissions)"
+            type="submit"
+            title="Search orders"
           >
             Search
           </button>
-        </div>
+        </form>
       </div>
 
-      {canCreateOrder ? (
-        <form className="mb-6 grid gap-3 rounded-lg border border-slate-200 bg-white p-4 md:grid-cols-[1fr_160px_auto]" onSubmit={createOrder}>
+      {canWrite ? (
+        <form
+          className="mb-6 grid gap-3 rounded-lg border border-slate-200 bg-white p-4 md:grid-cols-[1fr_160px_auto]"
+          onSubmit={createOrder}
+          {...webMcpFormProps('createOrder', 'Create a new customer order', true)}
+        >
           <input
             className="rounded-md border border-slate-300 px-3 py-2 text-sm"
             placeholder="Customer name"
             value={customerName}
             onChange={(event) => setCustomerName(event.target.value)}
             required
+            {...webMcpFieldProps('customer_name', 'Customer or account name')}
           />
           <input
             className="rounded-md border border-slate-300 px-3 py-2 text-sm"
@@ -151,11 +145,12 @@ export default function OrdersPage() {
             value={amount}
             onChange={(event) => setAmount(event.target.value)}
             required
+            {...webMcpFieldProps('amount', 'Order amount in dollars')}
           />
           <button
             className="rounded-md bg-slate-950 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:bg-slate-400 disabled:text-slate-300"
             disabled={busy}
-            title={canCreateOrder ? 'Create new order (WebMCP will validate your permissions)' : 'You do not have permission to create orders'}
+            title="Create new order"
           >
             Create order
           </button>
@@ -179,7 +174,11 @@ export default function OrdersPage() {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td className="px-4 py-8 text-center text-slate-500" colSpan={5}>Loading orders...</td></tr>
+              <tr>
+                <td className="px-4 py-8 text-center text-slate-500" colSpan={5}>
+                  Loading orders...
+                </td>
+              </tr>
             ) : filteredOrders.map((order) => (
               <tr key={order.id} className="border-b border-slate-100">
                 <td className="px-4 py-3 font-mono text-xs">{order.id.slice(0, 8)}</td>
@@ -187,14 +186,18 @@ export default function OrdersPage() {
                 <td className="px-4 py-3">${order.amount.toFixed(2)}</td>
                 <td className="px-4 py-3 capitalize">{order.status.replace('_', ' ')}</td>
                 <td className="px-4 py-3">
-                  {canUpdateOrderStatus ? (
+                  {canWrite ? (
                     <select
                       className="rounded-md border border-slate-300 px-2 py-1 text-sm"
                       value={order.status}
                       onChange={(event) => void updateStatus(order.id, event.target.value as OrderStatus)}
-                      title="Update order status (WebMCP will validate permissions)"
+                      title="Update order status"
                     >
-                      {editableStatuses.map((status) => <option key={status} value={status}>{status}</option>)}
+                      {editableStatuses.map((status) => (
+                        <option key={status} value={status}>
+                          {status}
+                        </option>
+                      ))}
                     </select>
                   ) : (
                     <span className="text-slate-600">Status: {order.status.replace('_', ' ')}</span>
@@ -208,4 +211,3 @@ export default function OrdersPage() {
     </div>
   );
 }
-
