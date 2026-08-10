@@ -15,6 +15,32 @@
       "bearerAuth": []
     }
   ],
+  "x-webmcp-ui": {
+    "routes": {
+      "dashboard": "/dashboard",
+      "orders": "/orders",
+      "admin": "/admin"
+    },
+    "actions": {
+      "createOrder": {
+        "route": "/orders",
+        "fields": {
+          "customer_name": ["Customer name", "Customer"],
+          "amount": ["Amount", "Order amount"]
+        },
+        "submit": ["Create order"],
+        "notes": "Create orders from the orders page form."
+      },
+      "updateOrderStatus": {
+        "route": "/orders",
+        "fields": {
+          "status": ["Status"]
+        },
+        "submit": ["Status"],
+        "notes": "Select the target order row before changing its status."
+      }
+    }
+  },
   "paths": {
     "/create-order": {
       "post": {
