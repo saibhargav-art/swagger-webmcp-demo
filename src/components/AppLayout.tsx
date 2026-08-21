@@ -1,6 +1,7 @@
 import React from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useWebMcpRegistration } from '../webmcp/useWebMcpRegistration';
 
 const links = [
   { to: '/dashboard', label: 'Dashboard' },
@@ -10,6 +11,7 @@ const links = [
 
 export default function AppLayout() {
   const { user, logout } = useAuth();
+  useWebMcpRegistration();
 
   return (
     <div className="flex min-h-screen bg-slate-50">

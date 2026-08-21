@@ -1,14 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { adminToolHandlers } from '../lib/supabaseApi';
 import ConfirmModal from '../components/ConfirmModal';
 import { useToast } from '../components/Toast';
 import { useAuth } from '../context/AuthContext';
-import { getOrders } from '../lib/supabaseApi';
+import { adminToolHandlers, getOrders } from '../lib/supabaseApi';
 import type { Order } from '../lib/types';
+import { webMcpFieldProps, webMcpFormProps } from '../webmcp/formAttributes';
 
 export default function AdminPage() {
   const { session, user } = useAuth();
-  // Use demo backend handlers directly for normal admin actions.
   const toast = useToast();
   const [orders, setOrders] = useState<Order[]>([]);
   const [quotaUserId, setQuotaUserId] = useState('');
@@ -24,56 +23,49 @@ export default function AdminPage() {
     void loadOrders();
   }, [session?.access_token]);
 
-
   const approveRefund = async (id: string) => {
     if (!session) {
-      toast('❌ Not signed in', 'error');
+      toast('Not signed in', 'error');
       return;
     }
 
-    const params = { id };
     try {
-      await adminToolHandlers.approveRefund(session.access_token, params);
-      toast('✅ Refund approved', 'success');
+      await adminToolHandlers.approveRefund(session.access_token, { id });
+      toast('Refund approved', 'success');
       await loadOrders();
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Refund approval failed';
-      toast(`❌ ${message}`, 'error');
+      toast(err instanceof Error ? err.message : 'Refund approval failed', 'error');
     }
   };
 
   const deleteOrder = async () => {
     if (!session || !deleteId) {
-      const message = !session ? 'Not signed in' : 'No order selected';
-      toast(`❌ ${message}`, 'error');
+      toast(!session ? 'Not signed in' : 'No order selected', 'error');
       return;
     }
 
-    const params = { id: deleteId };
     try {
-      await adminToolHandlers.deleteOrder(session.access_token, params);
-      toast('✅ Order deleted', 'success');
+      await adminToolHandlers.deleteOrder(session.access_token, { id: deleteId });
+      toast('Order deleted', 'success');
       setDeleteId(null);
       await loadOrders();
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Delete failed';
-      toast(`❌ ${message}`, 'error');
+      toast(err instanceof Error ? err.message : 'Delete failed', 'error');
     }
   };
 
-  const updateQuota = async () => {
+  const updateQuota = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
     if (!session) {
-      toast('❌ Not signed in', 'error');
+      toast('Not signed in', 'error');
       return;
     }
 
-    const params = { user_id: quotaUserId, quota: Number(quota) };
     try {
-      await adminToolHandlers.updateQuota(session.access_token, params);
-      toast('✅ Customer quota updated', 'success');
+      await adminToolHandlers.updateQuota(session.access_token, { user_id: quotaUserId, quota: Number(quota) });
+      toast('Customer quota updated', 'success');
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Quota update failed';
-      toast(`❌ ${message}`, 'error');
+      toast(err instanceof Error ? err.message : 'Quota update failed', 'error');
     }
   };
 
@@ -88,20 +80,36 @@ export default function AdminPage() {
         </p>
       </div>
 
-      <section className="mb-6 rounded-lg border border-slate-200 bg-white p-4">
+      <form
+        className="mb-6 rounded-lg border border-slate-200 bg-white p-4"
+        onSubmit={updateQuota}
+        {...webMcpFormProps('updateQuota', 'Update customer quota', true)}
+      >
         <h2 className="text-base font-semibold">Update customer quota</h2>
         <div className="mt-4 grid gap-3 md:grid-cols-[1fr_160px_auto]">
-          <input className="rounded-md border border-slate-300 px-3 py-2 text-sm" placeholder="User id" value={quotaUserId} onChange={(event) => setQuotaUserId(event.target.value)} />
-          <input className="rounded-md border border-slate-300 px-3 py-2 text-sm" type="number" value={quota} onChange={(event) => setQuota(event.target.value)} />
+          <input
+            className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+            placeholder="User id"
+            value={quotaUserId}
+            onChange={(event) => setQuotaUserId(event.target.value)}
+            {...webMcpFieldProps('user_id', 'Application user UUID')}
+          />
+          <input
+            className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+            type="number"
+            value={quota}
+            onChange={(event) => setQuota(event.target.value)}
+            {...webMcpFieldProps('quota', 'New quota value')}
+          />
           <button
             className="rounded-md bg-slate-950 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
-            onClick={updateQuota}
-            title="Update quota (WebMCP will validate your permissions)"
+            type="submit"
+            title="Update quota"
           >
             Update quota
           </button>
         </div>
-      </section>
+      </form>
 
       <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
         <table className="w-full min-w-[760px] text-left text-sm">
@@ -125,14 +133,14 @@ export default function AdminPage() {
                   <button
                     className="rounded-md border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-50"
                     onClick={() => void approveRefund(order.id)}
-                    title="Approve refund (WebMCP will validate your permissions)"
+                    title="Approve refund"
                   >
                     Approve refund
                   </button>
                   <button
                     className="rounded-md bg-rose-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-rose-700"
                     onClick={() => setDeleteId(order.id)}
-                    title="Delete order (WebMCP will validate your permissions)"
+                    title="Delete order"
                   >
                     Delete
                   </button>
@@ -154,4 +162,3 @@ export default function AdminPage() {
     </div>
   );
 }
-

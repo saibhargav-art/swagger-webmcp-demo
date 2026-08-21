@@ -31,13 +31,60 @@
         "submit": ["Create order"],
         "notes": "Create orders from the orders page form."
       },
+      "searchOrders": {
+        "route": "/orders",
+        "fields": {
+          "query": ["Search orders", "Customer name", "Status", "Order id"]
+        },
+        "submit": ["Search"],
+        "notes": "Search by customer name, status, order id, or partial text."
+      },
+      "listOrders": {
+        "route": "/orders",
+        "submit": ["List orders"],
+        "notes": "List the latest orders for filtering or duplicate checks."
+      },
+      "getOrderStatus": {
+        "route": "/orders",
+        "fields": {
+          "id": ["Order id", "Order UUID"]
+        },
+        "submit": ["Get status"],
+        "notes": "Resolve the order first if the user only provided a name."
+      },
       "updateOrderStatus": {
         "route": "/orders",
         "fields": {
-          "status": ["Status"]
+          "status": ["Status"],
+          "id": ["Order id", "Order UUID"]
         },
-        "submit": ["Status"],
+        "submit": ["Update status"],
         "notes": "Select the target order row before changing its status."
+      },
+      "deleteOrder": {
+        "route": "/admin",
+        "fields": {
+          "id": ["Order id", "Order UUID"]
+        },
+        "submit": ["Delete"],
+        "notes": "Delete the selected order from the admin page."
+      },
+      "approveRefund": {
+        "route": "/admin",
+        "fields": {
+          "id": ["Order id", "Order UUID"]
+        },
+        "submit": ["Approve refund"],
+        "notes": "Approve the refund for the selected order."
+      },
+      "updateQuota": {
+        "route": "/admin",
+        "fields": {
+          "user_id": ["User id", "Application user UUID"],
+          "quota": ["Quota"]
+        },
+        "submit": ["Update quota"],
+        "notes": "Adjust customer quota from the admin page."
       }
     }
   },

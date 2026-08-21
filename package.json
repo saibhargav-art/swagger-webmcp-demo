@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "generate:webapi": "node scripts/generate-webapi.mjs",
-    "deploy:functions": "supabase functions deploy create-order update-order-status delete-order approve-refund search-orders list-orders get-order-status update-quota",
+    "deploy:functions": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/deploy-functions.ps1",
     "predev": "npm run generate:webapi",
     "dev": "vite",
     "prebuild": "npm run generate:webapi",
