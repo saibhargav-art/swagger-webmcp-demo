@@ -22,24 +22,22 @@ VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
 
 ## Supabase setup
 
-1. Apply `supabase/migrations/001_ai_order_portal.sql`.
+1. Apply the SQL files in `supabase/migrations` in order. Migration `002` also
+   provisions missing application profiles for existing authenticated users.
 2. Create three Supabase Auth email/password users:
    - `admin@example.com`
    - `support@example.com`
    - `viewer@example.com`
 3. Update `supabase/seed.sql` with the real `auth.users.id` values for those accounts, then run it.
-4. Deploy the functions:
+4. Deploy every function from the same source revision:
 
-```bash
-supabase functions deploy create-order
-supabase functions deploy update-order-status
-supabase functions deploy delete-order
-supabase functions deploy approve-refund
-supabase functions deploy search-orders
-supabase functions deploy list-orders
-supabase functions deploy get-order-status
-supabase functions deploy update-quota
+```powershell
+npm run deploy:functions
 ```
+
+Do not deploy only one function after changing `supabase/functions/_shared`.
+Supabase bundles shared files into each function, so every function must be
+redeployed to keep authentication and authorization behavior consistent.
 
 5. Set function secrets:
 
