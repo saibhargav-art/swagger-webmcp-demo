@@ -3,7 +3,6 @@ import { useToast } from '../components/Toast';
 import { useAuth } from '../context/AuthContext';
 import { getOrders, orderToolHandlers } from '../lib/supabaseApi';
 import type { Order, OrderStatus } from '../lib/types';
-import { webMcpFieldProps, webMcpFormProps } from '../webmcp/formAttributes';
 
 const editableStatuses: OrderStatus[] = ['pending', 'processing', 'fulfilled', 'cancelled'];
 
@@ -105,13 +104,12 @@ export default function OrdersPage() {
           </p>
         </div>
 
-        <form className="flex gap-2" onSubmit={searchOrders} {...webMcpFormProps('searchOrders', 'Search orders')}>
+        <form className="flex gap-2" onSubmit={searchOrders}>
           <input
             className="w-64 rounded-md border border-slate-300 px-3 py-2 text-sm"
             placeholder="Search orders"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            {...webMcpFieldProps('query', 'Customer name, status, order id, or other search text')}
           />
           <button
             className="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium hover:bg-slate-50"
@@ -127,7 +125,6 @@ export default function OrdersPage() {
         <form
           className="mb-6 grid gap-3 rounded-lg border border-slate-200 bg-white p-4 md:grid-cols-[1fr_160px_auto]"
           onSubmit={createOrder}
-          {...webMcpFormProps('createOrder', 'Create a new customer order', true)}
         >
           <input
             className="rounded-md border border-slate-300 px-3 py-2 text-sm"
@@ -135,7 +132,6 @@ export default function OrdersPage() {
             value={customerName}
             onChange={(event) => setCustomerName(event.target.value)}
             required
-            {...webMcpFieldProps('customer_name', 'Customer or account name')}
           />
           <input
             className="rounded-md border border-slate-300 px-3 py-2 text-sm"
@@ -145,7 +141,6 @@ export default function OrdersPage() {
             value={amount}
             onChange={(event) => setAmount(event.target.value)}
             required
-            {...webMcpFieldProps('amount', 'Order amount in dollars')}
           />
           <button
             className="rounded-md bg-slate-950 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:bg-slate-400 disabled:text-slate-300"

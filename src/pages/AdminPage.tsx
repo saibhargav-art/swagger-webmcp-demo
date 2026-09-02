@@ -4,7 +4,6 @@ import { useToast } from '../components/Toast';
 import { useAuth } from '../context/AuthContext';
 import { adminToolHandlers, getOrders } from '../lib/supabaseApi';
 import type { Order } from '../lib/types';
-import { webMcpFieldProps, webMcpFormProps } from '../webmcp/formAttributes';
 
 export default function AdminPage() {
   const { session, user } = useAuth();
@@ -83,7 +82,6 @@ export default function AdminPage() {
       <form
         className="mb-6 rounded-lg border border-slate-200 bg-white p-4"
         onSubmit={updateQuota}
-        {...webMcpFormProps('updateQuota', 'Update customer quota', true)}
       >
         <h2 className="text-base font-semibold">Update customer quota</h2>
         <div className="mt-4 grid gap-3 md:grid-cols-[1fr_160px_auto]">
@@ -92,14 +90,12 @@ export default function AdminPage() {
             placeholder="User id"
             value={quotaUserId}
             onChange={(event) => setQuotaUserId(event.target.value)}
-            {...webMcpFieldProps('user_id', 'Application user UUID')}
           />
           <input
             className="rounded-md border border-slate-300 px-3 py-2 text-sm"
             type="number"
             value={quota}
             onChange={(event) => setQuota(event.target.value)}
-            {...webMcpFieldProps('quota', 'New quota value')}
           />
           <button
             className="rounded-md bg-slate-950 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"

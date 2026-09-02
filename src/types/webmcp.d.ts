@@ -1,26 +1,3 @@
-import 'react';
-
-declare module 'react' {
-  interface HTMLAttributes<T> {
-    toolname?: string;
-    tooldescription?: string;
-    toolautosubmit?: boolean;
-    toolparamdescription?: string;
-  }
-
-  interface InputHTMLAttributes<T> {
-    toolparamdescription?: string;
-  }
-
-  interface SelectHTMLAttributes<T> {
-    toolparamdescription?: string;
-  }
-
-  interface TextareaHTMLAttributes<T> {
-    toolparamdescription?: string;
-  }
-}
-
 declare global {
   interface Document {
     modelContext?: {
@@ -29,7 +6,7 @@ declare global {
         options?: { signal?: AbortSignal },
       ) => Promise<WebMcpRegisteredTool> | WebMcpRegisteredTool;
       getTools?: () => Promise<WebMcpRegisteredTool[]> | WebMcpRegisteredTool[];
-      executeTool?: (name: string, input?: Record<string, unknown>) => Promise<unknown>;
+      executeTool?: (tool: WebMcpRegisteredTool, input: string) => Promise<unknown>;
     };
   }
 

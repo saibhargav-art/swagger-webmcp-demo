@@ -4,39 +4,6 @@ import { useAuth } from '../context/AuthContext';
 import { adminToolHandlers, getOrders, orderToolHandlers } from '../lib/supabaseApi';
 import type { AppUser, AuthSession, OrderStatus, UserRole } from '../lib/types';
 
-type ToolAnnotations = {
-  readOnlyHint?: boolean;
-  untrustedContentHint?: boolean;
-};
-
-type ToolRegistration = {
-  name: string;
-  description: string;
-  inputSchema: Record<string, unknown>;
-  annotations?: ToolAnnotations;
-  execute: (input: Record<string, unknown>) => Promise<unknown>;
-};
-
-type ModelContext = {
-  registerTool: (
-    tool: ToolRegistration,
-    options?: {
-      signal?: AbortSignal;
-      exposedTo?: string[];
-    },
-  ) => Promise<void> | void;
-};
-
-declare global {
-  interface Document {
-    modelContext?: ModelContext;
-  }
-}
-
-const DEFAULT_EXPOSED_ORIGINS = import.meta.env.DEV
-  ? ['http://localhost:5173', 'http://127.0.0.1:5173']
-  : [];
-
 const TOOL_DEFINITIONS: ToolDefinition[] = [
   {
     name: 'searchOrders',
@@ -175,9 +142,10 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
   {
     name: 'deleteOrder',
     description: 'Permanently delete an order selected by UUID.',
-    routePrefixes: ['/admin'],
+    routePrefixes: ['/orders', '/admin'],
     roles: ['admin'],
     readOnlyHint: false,
+    destructiveHint: true,
     inputSchema: {
       type: 'object',
       properties: {
@@ -238,15 +206,13 @@ export function useWebMcpRegistration(): void {
           name: definition.name,
           description: definition.description,
           inputSchema: definition.inputSchema,
-          annotations: definition.readOnlyHint !== undefined
-            ? { readOnlyHint: definition.readOnlyHint, untrustedContentHint: true }
-            : { untrustedContentHint: true },
+          annotations: {
+            readOnlyHint: definition.readOnlyHint,
+            destructiveHint: definition.destructiveHint,
+          },
           execute: async (input) => definition.execute({ session, user }, asRecord(input)),
         },
-        {
-          signal: controller.signal,
-          exposedTo: DEFAULT_EXPOSED_ORIGINS.length > 0 ? DEFAULT_EXPOSED_ORIGINS : undefined,
-        },
+        { signal: controller.signal },
       );
     }
 
@@ -262,6 +228,7 @@ type ToolDefinition = {
   routePrefixes: string[];
   roles: UserRole[];
   readOnlyHint: boolean;
+  destructiveHint?: boolean;
   inputSchema: Record<string, unknown>;
   execute: (context: { session: AuthSession; user: AppUser }, input: Record<string, unknown>) => Promise<unknown>;
 };

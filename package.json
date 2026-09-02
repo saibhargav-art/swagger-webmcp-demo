@@ -3,11 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "generate:webapi": "node scripts/generate-webapi.mjs",
     "deploy:functions": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/deploy-functions.ps1",
-    "predev": "npm run generate:webapi",
     "dev": "vite",
-    "prebuild": "npm run generate:webapi",
     "build": "tsc && vite build",
     "preview": "vite preview"
   },
